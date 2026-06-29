@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { fetch } from "../mockApi";
 import {
@@ -23,7 +23,7 @@ import { motion } from "motion/react";
 
 export default function PetPublicProfile() {
   const { id } = useParams(); // Can be pet ID or QR Code ID
-  const { addToast, darkMode, toggleDarkMode } = useApp();
+  const { addToast, darkMode, toggleDarkMode, user } = useApp();
 
   const [pet, setPet] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +38,8 @@ export default function PetPublicProfile() {
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
 
+  const scanRegisteredRef = React.useRef(false);
+
   // Fetch pet public details on mount and trigger an automatic baseline scan if marked as lost
   useEffect(() => {
     if (!id) return;
@@ -51,8 +53,12 @@ export default function PetPublicProfile() {
       .then(async (data) => {
         setPet(data);
         
-        // Trigger background silent scan log only if marked as lost
-        if (data.status === "perdido") {
+        // Detect if this view is specifically triggered by a QR scan (URL contains ?src=qr)
+        const isQRScan = new URLSearchParams(window.location.search).get("src") === "qr";
+
+        // Trigger background silent scan log only if marked as lost and accessed via QR code scan
+        if (data.status === "perdido" && isQRScan && !scanRegisteredRef.current) {
+          scanRegisteredRef.current = true;
           let realCity = "";
           let realCountry = "";
           try {
@@ -288,22 +294,45 @@ export default function PetPublicProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-955 font-sans pb-20 relative transition-colors text-slate-800 dark:text-slate-100">
-      <div className="absolute top-4 right-4 z-50">
-        <button
-          onClick={toggleDarkMode}
-          className="p-2.5 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-200/80 dark:border-slate-800 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 shadow-lg transition"
-          aria-label="Toggle theme"
-        >
-          {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </button>
-      </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-955 font-sans pb-20 transition-colors text-slate-800 dark:text-slate-100">
+      
+      {/* Top Header Navigation */}
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-3.5 px-4 sticky top-0 z-50 shadow-xs transition-colors">
+        <div className="mx-auto max-w-2xl flex items-center justify-between gap-4">
+          <Link
+            to={user ? "/dashboard" : "/"}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition"
+          >
+            ← {user ? "Volver a mi Panel" : "Volver al Inicio"}
+          </Link>
+
+          {isLost && (
+            <span className="font-display font-extrabold text-red-600 dark:text-red-400 text-xs tracking-wide flex items-center gap-1.5">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
+              </span>
+              ALERTA: PERDIDA
+            </span>
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-xl text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              aria-label="Toggle theme"
+            >
+              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+      </header>
       
       {/* emergency alert ribbon */}
       {isLost && (
-        <div className="sticky top-0 z-40 bg-gradient-to-r from-red-600 to-red-500 text-white text-center py-3.5 px-6 font-display font-bold text-xs tracking-wide shadow-md flex items-center justify-center gap-2 animate-pulse">
-          <AlertTriangle className="h-4.5 w-4.5" />
-          <span>¡ATENCIÓN! ESTA MASCOTA SE ENCUENTRA PERDIDA. POR FAVOR, COMUNÍCATE CON SU DUEÑO.</span>
+        <div className="bg-gradient-to-r from-red-600 to-red-500 text-white text-center py-2.5 px-4 font-display font-bold text-xs tracking-wide shadow-md flex items-center justify-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>¡ATENCIÓN! ESTA MASCOTA SE ENCUENTRA PERDIDA. COMUNÍCATE CON SU DUEÑO.</span>
         </div>
       )}
       
@@ -406,7 +435,7 @@ export default function PetPublicProfile() {
               </div>
 
               {/* Action Buttons */}
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {pet.ownerContact?.phone && (
                   <a
                     href={`tel:${pet.ownerContact.phone}`}
@@ -424,15 +453,6 @@ export default function PetPublicProfile() {
                     className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-xs font-bold text-white shadow-md hover:bg-emerald-500 transition active:scale-98"
                   >
                     <MessageSquare className="h-4 w-4" /> WhatsApp Directo
-                  </a>
-                )}
-
-                {pet.ownerContact?.email && (
-                  <a
-                    href={`mailto:${pet.ownerContact.email}?subject=Encontré%20a%20tu%20mascota:%20${encodeURIComponent(pet.name)}`}
-                    className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 dark:border-slate-750 py-3.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                  >
-                    <Mail className="h-4 w-4" /> Enviar Correo
                   </a>
                 )}
               </div>

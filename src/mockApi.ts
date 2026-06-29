@@ -527,6 +527,12 @@ export const fetch = async function (url: RequestInfo | URL, options?: RequestIn
       }
     }
 
+    // 7.5. GET ALL SYSTEM LOST PETS (PUBLIC)
+    if (pathname === "/api/pets/public/lost" && method === "GET") {
+      const lostPets = db.pets.filter((p: any) => p.status === "perdido");
+      return jsonResponse(lostPets);
+    }
+
     // 8. GET PETS BY ID OR CODE / UPDATE / DELETE
     if (pathname.startsWith("/api/pets/")) {
       const idOrCode = pathname.substring(10); // get everything after /api/pets/
@@ -554,7 +560,7 @@ export const fetch = async function (url: RequestInfo | URL, options?: RequestIn
       // C. Special: QR IMAGES GENERATOR (REDIRECT TO QR API SERVER)
       if (idOrCode.startsWith("qr-png/")) {
         const qrCodeId = idOrCode.substring(7);
-        const targetUrl = `${window.location.origin}/pet/${qrCodeId}`;
+        const targetUrl = `${window.location.origin}/pet/${qrCodeId}?src=qr`;
         const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&color=0f172a&data=${encodeURIComponent(targetUrl)}`;
         
         // Return a response that fetches the image and sends it as Blob
@@ -584,8 +590,15 @@ export const fetch = async function (url: RequestInfo | URL, options?: RequestIn
           const dateStr = now.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
           const timeStr = now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
 
-          const defaultCities = ["Rosario", "Córdoba", "Buenos Aires", "Mendoza", "Santa Fe", "Salta"];
-          const city = customCity || defaultCities[Math.floor(Math.random() * defaultCities.length)];
+          const isGpsScan = !!(latitude && longitude);
+          let city = customCity;
+          if (!city) {
+            if (isGpsScan) {
+              city = "Ubicación GPS de alta precisión";
+            } else {
+              city = "Rosario (Aproximado por red IP)";
+            }
+          }
 
           const scanId = "scan-" + Math.random().toString(36).substring(2, 11);
           const newScan: Scan = {
@@ -610,10 +623,24 @@ export const fetch = async function (url: RequestInfo | URL, options?: RequestIn
 
           // Add notification
           const isLost = pet.status === "perdido";
-          const title = isLost ? `⚠️ ¡Mascota Perdida! Escaneo de ${pet.name}` : `🐾 Escaneo de QR de ${pet.name}`;
-          let message = `El código QR de ${pet.name} fue escaneado desde ${city}, Argentina.`;
-          if (comment) {
-            message += ` Comentario: "${comment}"`;
+          const title = isLost 
+            ? (isGpsScan ? `🚨 ¡MASCOTA ENCONTRADA! UBICACIÓN DE ${pet.name.toUpperCase()}` : `⚠️ ¡Mascota Perdida! Escaneo de ${pet.name}`)
+            : `🐾 Escaneo de QR de ${pet.name}`;
+          
+          let message = "";
+          if (isGpsScan) {
+            message = `¡Mascota encontrada! Ubicación satelital precisa de ${pet.name} recibida en tiempo real. `;
+            if (comment && comment.startsWith("📍 Ubicación exacta:")) {
+              message += `Dirección estimada: ${comment.replace("📍 Ubicación exacta: ", "")}. `;
+            } else if (comment) {
+              message += `Nota del rescatista: "${comment}". `;
+            }
+            message += `Coordenadas exactas: (${Number(latitude).toFixed(6)}, ${Number(longitude).toFixed(6)}).`;
+          } else {
+            message = `El código QR de ${pet.name} fue escaneado desde ${city}, Argentina.`;
+            if (comment) {
+              message += ` Comentario: "${comment}"`;
+            }
           }
 
           const notifId = "notif-" + Math.random().toString(36).substring(2, 11);
@@ -622,13 +649,19 @@ export const fetch = async function (url: RequestInfo | URL, options?: RequestIn
             userId: pet.userId,
             petId: pet.id,
             scanId,
-            type: (latitude && longitude) ? "location" : "scan",
+            type: isGpsScan ? "location" : "scan",
             title,
             message,
             date: dateStr,
             time: timeStr,
             isRead: false,
-            createdAt: now.toISOString()
+            createdAt: now.toISOString(),
+            latitude: latitude ? Number(latitude) : undefined,
+            longitude: longitude ? Number(longitude) : undefined,
+            city,
+            comment: comment || undefined,
+            petName: pet.name,
+            petPhotoUrl: pet.photoUrl
           };
 
           db.notifications.push(newNotification);

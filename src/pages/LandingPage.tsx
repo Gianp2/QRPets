@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { Link, useNavigate } from "react-router-dom";
+import { fetch } from "../mockApi";
 import {
   QrCode,
   Shield,
@@ -18,7 +19,8 @@ import {
   Smartphone,
   Coffee,
   Sun,
-  Moon
+  Moon,
+  RotateCw
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -135,6 +137,13 @@ export default function LandingPage() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-300">
+            <Link to="/lost-pets" className="hover:text-red-600 dark:hover:text-red-400 font-bold transition flex items-center gap-1.5 text-red-600 dark:text-red-400">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </span>
+              Mascotas Perdidas
+            </Link>
             <a href="#como-funciona" onClick={(e) => scrollToSection(e, "como-funciona")} className="hover:text-indigo-600 dark:hover:text-indigo-400 transition">¿Cómo funciona?</a>
             <a href="#beneficios" onClick={(e) => scrollToSection(e, "beneficios")} className="hover:text-indigo-600 dark:hover:text-indigo-400 transition">Beneficios</a>
             <a href="#faq" onClick={(e) => scrollToSection(e, "faq")} className="hover:text-indigo-600 dark:hover:text-indigo-400 transition">FAQ</a>
@@ -202,6 +211,10 @@ export default function LandingPage() {
               className="absolute top-full left-0 right-0 z-50 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-6 md:hidden shadow-2xl overflow-hidden"
             >
               <nav className="flex flex-col gap-4 text-base font-medium text-slate-600 dark:text-slate-300">
+                <Link to="/lost-pets" className="text-red-600 dark:text-red-400 font-bold flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                  Mascotas Perdidas Activas
+                </Link>
                 <a href="#como-funciona" onClick={(e) => scrollToSection(e, "como-funciona")} className="hover:text-indigo-600 dark:hover:text-indigo-400">¿Cómo funciona?</a>
                 <a href="#beneficios" onClick={(e) => scrollToSection(e, "beneficios")} className="hover:text-indigo-600 dark:hover:text-indigo-400">Beneficios</a>
                 <a href="#faq" onClick={(e) => scrollToSection(e, "faq")} className="hover:text-indigo-600 dark:hover:text-indigo-400">FAQ</a>
@@ -350,11 +363,11 @@ export default function LandingPage() {
                     ⚠️ Si esta mascota se pierde, cambia su estado a "Perdido" y el QR mostrará alertas de emergencia.
                   </p>
                 </div>
-              </div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
       {/* How it works Section */}
       <section id="como-funciona" className="py-20 bg-slate-100 dark:bg-slate-900/40 border-y border-slate-200 dark:border-slate-800">

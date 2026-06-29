@@ -150,6 +150,45 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [token]);
 
+  // Listen for storage changes to sync multi-tab development environment in real-time
+  useEffect(() => {
+    if (!token) return;
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "petlink_db") {
+        try {
+          const oldDb = e.oldValue ? JSON.parse(e.oldValue) : null;
+          const newDb = e.newValue ? JSON.parse(e.newValue) : null;
+          if (newDb && newDb.notifications) {
+            // Re-fetch all notifications & pets to ensure UI is perfectly synced
+            fetchNotifications();
+            fetchPets();
+
+            // Detect newly added notifications
+            const oldLength = oldDb?.notifications?.length || 0;
+            const newLength = newDb.notifications.length;
+            if (newLength > oldLength) {
+              const freshNotifs = newDb.notifications.slice(oldLength);
+              // Filter notifications destined for this user
+              const myNewNotifs = freshNotifs.filter((n: any) => n.userId === user?.id);
+              for (const notif of myNewNotifs) {
+                // Display real-time toast alert
+                addToast(`${notif.title}: ${notif.message}`, "scan");
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Storage sync failed", err);
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [token, user?.id]);
+
   // Dev tools mailbox poller
   useEffect(() => {
     fetchDevEmails();

@@ -23,7 +23,9 @@ import {
   Lock,
   X,
   Sun,
-  Moon
+  Moon,
+  MapPin,
+  ExternalLink
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -77,6 +79,12 @@ export default function DashboardPage() {
 
   // Print QR Modal
   const [qrToPrint, setQrToPrint] = useState<{ id: string; name: string; codeId: string } | null>(null);
+
+  // Refresh pets and notifications on mount to ensure real-time consistency
+  React.useEffect(() => {
+    fetchPets();
+    fetchNotifications();
+  }, []);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -267,7 +275,7 @@ export default function DashboardPage() {
           <body>
             <div class="card">
               <h1>🐾 ${qrToPrint?.name}</h1>
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&color=0f172a&data=${encodeURIComponent(window.location.origin + '/pet/' + qrToPrint?.codeId)}" alt="QR" />
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&color=0f172a&data=${encodeURIComponent(window.location.origin + '/pet/' + qrToPrint?.codeId + '?src=qr')}" alt="QR" />
               <p>Escanea para ver información de contacto y salud</p>
               <p style="font-weight: bold; margin-top: 10px; font-size: 11px;">PETLINKQR.COM</p>
             </div>
@@ -622,15 +630,20 @@ export default function DashboardPage() {
                           }`}
                         >
                           <div className={`p-2 rounded-xl shrink-0 mt-0.5 ${
-                            notif.type === "location" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/85 dark:text-emerald-300" : "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/85 dark:text-indigo-300"
+                            notif.type === "location" ? "bg-red-100 text-red-850 dark:bg-red-950/85 dark:text-red-300 animate-pulse" : "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/85 dark:text-indigo-300"
                           }`}>
-                            <QrCode className="h-4.5 w-4.5" />
+                            {notif.type === "location" ? <MapPin className="h-4.5 w-4.5" /> : <QrCode className="h-4.5 w-4.5" />}
                           </div>
 
                           <div className="flex-1 space-y-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white">
+                            <div className="flex items-center justify-between gap-2 font-display">
+                              <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5 flex-wrap">
                                 {notif.title}
+                                {notif.type === "location" && (
+                                  <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full uppercase font-bold animate-pulse font-sans tracking-wide">
+                                    📍 GPS ACTIVO
+                                  </span>
+                                )}
                               </h4>
                               <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 shrink-0">
                                 {notif.date} a las {notif.time}
@@ -640,10 +653,38 @@ export default function DashboardPage() {
                               {notif.message}
                             </p>
 
+                            {/* Render precise maps anchors and visualization tags if GPS is present */}
+                            {notif.latitude && notif.longitude && (
+                              <div className="mt-3 p-3 rounded-xl border border-red-100 dark:border-red-900/40 bg-red-50/20 dark:bg-red-950/25 space-y-2">
+                                <div className="flex items-center justify-between gap-2 flex-wrap text-[9px] text-red-650 dark:text-red-400 font-mono font-bold uppercase tracking-wider">
+                                  <span>🌐 Latitud: {notif.latitude.toFixed(6)}, Longitud: {notif.longitude.toFixed(6)}</span>
+                                  <span>Garantía Satelital GPS</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2 pt-1">
+                                  <a
+                                    href={`https://www.google.com/maps/search/?api=1&query=${notif.latitude},${notif.longitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-xl shadow-xs transition cursor-pointer"
+                                  >
+                                    <MapPin className="h-3.5 w-3.5" /> Abrir en Google Maps
+                                  </a>
+                                  <a
+                                    href={`https://www.openstreetmap.org/?mlat=${notif.latitude}&mlon=${notif.longitude}#map=18/${notif.latitude}/${notif.longitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-750 transition cursor-pointer"
+                                  >
+                                    <ExternalLink className="h-3 w-3" /> OpenStreetMap
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
                             {!notif.isRead && (
                               <button
                                 onClick={() => handleMarkAsRead(notif.id)}
-                                className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline mt-2 block"
+                                className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline mt-2.5 block"
                               >
                                 ✓ Marcar como leída
                               </button>
@@ -821,7 +862,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="my-5 rounded-2xl bg-white p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex justify-center items-center">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&color=0f172a&data=${encodeURIComponent(window.location.origin + "/pet/" + qrToPrint.codeId)}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&color=0f172a&data=${encodeURIComponent(window.location.origin + "/pet/" + qrToPrint.codeId + "?src=qr")}`}
                     alt="Pet QR Code"
                     className="h-44 w-44"
                   />

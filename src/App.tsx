@@ -8,6 +8,7 @@ import PetFormPage from "./pages/PetFormPage";
 import PetPublicProfile from "./pages/PetPublicProfile";
 import PetPrivatePage from "./pages/PetPrivatePage";
 import AdminDashboard from "./pages/AdminDashboard";
+import LostPetsPage from "./pages/LostPetsPage";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, AlertCircle, Info, QrCode, X } from "lucide-react";
 
@@ -107,6 +108,14 @@ function MainAppLayout() {
         <Route path="/pet/:id" element={<PetPublicProfile />} />
 
         {/* Private User Routes */}
+        <Route
+          path="/lost-pets"
+          element={
+            <PrivateRoute>
+              <LostPetsPage />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={
