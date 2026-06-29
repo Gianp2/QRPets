@@ -1,0 +1,6 @@
+{
+  "name": "PetLink QR",
+  "description": "Plataforma para el reencuentro de mascotas perdidas mediante códigos QR únicos y perfiles públicos de contacto.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
