@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
+import { fetch } from "../mockApi";
 import {
   ArrowLeft,
   QrCode,
@@ -124,6 +125,27 @@ export default function PetPrivatePage() {
     }
   };
 
+  const handleDownloadQR = async () => {
+    if (!pet) return;
+    try {
+      const res = await fetch(`/api/pets/qr-png/${pet.qrCodeId}`);
+      if (!res.ok) throw new Error("Error fetching QR");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `petlink_qr_${pet.qrCodeId}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      addToast("Código QR descargado con éxito", "success");
+    } catch (error) {
+      console.error("Error descargando QR:", error);
+      addToast("Error al descargar el código QR", "error");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors">
@@ -208,13 +230,12 @@ export default function PetPrivatePage() {
               <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
                 <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Administrar Identificador</span>
                 
-                <a
-                  href={`/api/pets/qr-png/${pet.qrCodeId}`}
-                  download
-                  className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                <button
+                  onClick={handleDownloadQR}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                 >
                   <QrCode className="h-4 w-4 text-slate-500 dark:text-slate-400" /> Descargar QR para Imprimir
-                </a>
+                </button>
 
                 <div className="rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 p-3 text-[11px] text-indigo-700 dark:text-indigo-300 leading-relaxed border border-indigo-100/30 dark:border-indigo-800/40">
                   <span className="font-bold block mb-1 text-indigo-900 dark:text-indigo-200">✨ Identificador Permanente</span>

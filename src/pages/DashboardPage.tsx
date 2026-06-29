@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { Link, useNavigate } from "react-router-dom";
+import { fetch } from "../mockApi";
 import {
   Plus,
   QrCode,
@@ -206,6 +207,26 @@ export default function DashboardPage() {
     }
   };
 
+  const handleDownloadQR = async (qrCodeId: string) => {
+    try {
+      const res = await fetch(`/api/pets/qr-png/${qrCodeId}`);
+      if (!res.ok) throw new Error("Error fetching QR");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `petlink_qr_${qrCodeId}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      addToast("Código QR descargado con éxito", "success");
+    } catch (error) {
+      console.error("Error descargando QR:", error);
+      addToast("Error al descargar el código QR", "error");
+    }
+  };
+
   const handlePrint = () => {
     const printContent = document.getElementById("printable-qr-area");
     if (!printContent) return;
@@ -246,7 +267,7 @@ export default function DashboardPage() {
           <body>
             <div class="card">
               <h1>🐾 ${qrToPrint?.name}</h1>
-              <img src="/api/pets/qr-png/${qrToPrint?.codeId}" alt="QR" />
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&color=0f172a&data=${encodeURIComponent(window.location.origin + '/pet/' + qrToPrint?.codeId)}" alt="QR" />
               <p>Escanea para ver información de contacto y salud</p>
               <p style="font-weight: bold; margin-top: 10px; font-size: 11px;">PETLINKQR.COM</p>
             </div>
@@ -523,14 +544,13 @@ export default function DashboardPage() {
                               >
                                 <QrCode className="h-4 w-4" />
                               </button>
-                              <a
-                                href={`/api/pets/qr-png/${pet.qrCodeId}`}
-                                download
+                              <button
+                                onClick={() => handleDownloadQR(pet.qrCodeId)}
                                 title="Descargar código QR (PNG)"
-                                className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition flex items-center justify-center border border-indigo-100/10 dark:border-indigo-900/10"
+                                className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition flex items-center justify-center border border-indigo-100/10 dark:border-indigo-900/10 cursor-pointer"
                               >
                                 <Download className="h-4 w-4" />
-                              </a>
+                              </button>
                             </div>
 
                             <button
@@ -801,7 +821,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="my-5 rounded-2xl bg-white p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex justify-center items-center">
                   <img
-                    src={`/api/pets/qr-png/${qrToPrint.codeId}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&color=0f172a&data=${encodeURIComponent(window.location.origin + "/pet/" + qrToPrint.codeId)}`}
                     alt="Pet QR Code"
                     className="h-44 w-44"
                   />

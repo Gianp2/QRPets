@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, Pet, Notification, DevEmail } from "../types";
+import { fetch } from "../mockApi";
 
 export interface ToastMessage {
   id: string;

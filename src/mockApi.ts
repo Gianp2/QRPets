@@ -57,6 +57,37 @@ const DEFAULT_DB = {
       createdAt: "2026-05-29T21:54:31.240Z"
     },
     {
+      id: "pet-rocky",
+      userId: "user-1",
+      photoUrl: "https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?w=600&auto=format&fit=crop&q=80",
+      name: "Rocky",
+      species: "Perro",
+      breed: "Pastor Alemán",
+      gender: "macho",
+      birthDate: "2021-11-05",
+      weight: 34.5,
+      color: "Negro y fuego",
+      microchipNumber: "985112003847521",
+      description: "Rocky es un compañero sumamente inteligente, leal y entrenado. Es muy protector con los niños y responde perfectamente a comandos básicos en español como 'sentado', 'aquí' y 'quieto'. Le fascina jugar a buscar la pelota y correr al aire libre.",
+      status: "casa",
+      allergies: "Alergia alimentaria severa al pollo y picaduras de pulgas.",
+      medication: "Apoquel 16mg (media tableta diaria por control de picazón en la piel).",
+      illnesses: "Dermatitis atópica estacional controlada.",
+      vetName: "Clínica Veterinaria Dr. Sosa - Urgencias 24h (+54 9 341 999-8888)",
+      observations: "Tiene una mancha blanca distintiva en el pecho. Siempre lleva puesto su collar de cuero marrón con su chapa inteligente de PetLinkQR. Suele ser desconfiado con otros machos dominantes en el primer encuentro.",
+      ownerContact: {
+        name: "Juan Pérez",
+        phone: "+54 9 341 123-4567",
+        whatsapp: "5493411234567",
+        email: "demo@petlinkqr.com",
+        city: "Rosario, Santa Fe",
+        address: "Av. Pellegrini 1200"
+      },
+      qrCodeId: "qr-rocky",
+      scansCount: 12,
+      createdAt: "2026-01-15T10:30:00.000Z"
+    },
+    {
       id: "pet-luna",
       userId: "user-1",
       photoUrl: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=500&auto=format&fit=crop&q=80",
@@ -174,7 +205,18 @@ const getDb = () => {
     return DEFAULT_DB;
   }
   try {
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    if (parsed && parsed.pets) {
+      const hasRocky = parsed.pets.some((p: any) => p.id === "pet-rocky");
+      if (!hasRocky) {
+        const rocky = DEFAULT_DB.pets.find(p => p.id === "pet-rocky");
+        if (rocky) {
+          parsed.pets.push(rocky);
+          localStorage.setItem("petlink_db", JSON.stringify(parsed));
+        }
+      }
+    }
+    return parsed;
   } catch (err) {
     localStorage.setItem("petlink_db", JSON.stringify(DEFAULT_DB));
     return DEFAULT_DB;
@@ -227,12 +269,12 @@ if (typeof window !== "undefined") {
 // Global window.fetch Interceptor
 const originalFetch = window.fetch;
 
-window.fetch = async function (url: RequestInfo | URL, options?: RequestInit): Promise<Response> {
+export const fetch = async function (url: RequestInfo | URL, options?: RequestInit): Promise<Response> {
   const urlString = typeof url === "string" ? url : (url as any).url || url.toString();
   
   // Non-API calls should proceed normally
   if (!urlString.includes("/api/")) {
-    return originalFetch.apply(this, [url, options]);
+    return originalFetch(url, options);
   }
 
   try {
@@ -788,3 +830,7 @@ window.fetch = async function (url: RequestInfo | URL, options?: RequestInit): P
     });
   }
 };
+
+if (typeof window !== "undefined") {
+  // EventSource is mockable and does not throw errors
+}

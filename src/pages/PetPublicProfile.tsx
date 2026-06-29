@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
+import { fetch } from "../mockApi";
 import {
   Phone,
   MessageSquare,

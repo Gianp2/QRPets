@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { fetch } from "../mockApi";
 import { QrCode, Lock, Mail, User, AlertCircle, CheckCircle, ArrowLeft, Loader2, ShieldAlert, Sun, Moon } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -378,7 +379,7 @@ export default function AuthPage({ initialMode = "login" }: { initialMode?: "log
               type="button"
               onClick={() => {
                 setEmail("demo@petlinkqr.com");
-                setPassword("user123");
+                setPassword("demo123");
                 setMode("login");
               }}
               className="flex-1 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 hover:bg-indigo-100 dark:hover:bg-indigo-950/70 py-2 px-3 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 transition active:scale-95 cursor-pointer flex items-center justify-center gap-1"
